@@ -188,6 +188,8 @@ class Shipment(models.Model):
     risk_score = models.PositiveIntegerField(default=0)
     risk_value = models.FloatField(default=0.0)
     recommendation = models.TextField(blank=True)
+    ai_explanation = models.TextField(null=True, blank=True)
+    ai_explained_at = models.DateTimeField(null=True, blank=True)
 
     last_risk_recalc_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

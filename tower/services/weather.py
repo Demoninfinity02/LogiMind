@@ -105,8 +105,33 @@ def get_or_fetch_weather(location: Location, *, force: bool = False) -> WeatherS
         else:
             snapshot.save()
         return snapshot
-    except Exception:
-        logger.exception("Weather fetch failed for %s", location)
+    except Exception as exc:
+        # Keep refresh jobs resilient in restricted/offline environments.
+        logger.warning("Weather fetch failed for %s: %s", location, exc)
+        if snapshot is None:
+            snapshot = WeatherSnapshot(location=location)
+        snapshot.source = WeatherSource.OPEN_METEO
+        snapshot.condition = WeatherCondition.UNKNOWN
+        snapshot.risk_level = RiskLevel.LOW
+        snapshot.temperature_c = None
+        snapshot.raw_json = {"fallback": True, "reason": "weather_fetch_failed"}
+        snapshot.fetched_at = now
+        snapshot.expires_at = now + ttl
+        if snapshot.pk:
+            snapshot.save(
+                update_fields=[
+                    "source",
+                    "condition",
+                    "risk_level",
+                    "temperature_c",
+                    "raw_json",
+                    "fetched_at",
+                    "expires_at",
+                    "updated_at",
+                ]
+            )
+        else:
+            snapshot.save()
         return snapshot
 
 

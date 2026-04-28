@@ -87,7 +87,9 @@ STORAGES = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-LOGIN_URL = "/admin/login/"
+LOGIN_URL = "/login/"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/login/"
 
 
 # Live update settings (keep simple, poll-based)
@@ -101,3 +103,9 @@ WEATHER_CACHE_TTL_SECONDS = int(os.environ.get("WEATHER_CACHE_TTL_SECONDS", "300
 
 # Traffic simulation cache
 TRAFFIC_CACHE_TTL_SECONDS = int(os.environ.get("TRAFFIC_CACHE_TTL_SECONDS", "180"))
+
+# Local Gemma/Ollama explanation settings
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/generate")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "gemma3:latest")
+OLLAMA_TIMEOUT_SECONDS = int(os.environ.get("OLLAMA_TIMEOUT_SECONDS", "10"))
+AI_EXPLANATION_TTL_MINUTES = int(os.environ.get("AI_EXPLANATION_TTL_MINUTES", "10"))

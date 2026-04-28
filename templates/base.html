@@ -16,7 +16,16 @@
           <span class="fw-semibold">Control Tower</span>
         </a>
         <nav class="d-flex align-items-center gap-2">
-          <a class="btn btn-outline-secondary btn-sm" href="/admin/">Admin</a>
+          {% if request.user.is_authenticated %}
+            <span class="small text-body-secondary">Hi, {{ request.user.username }}</span>
+            <form method="post" action="{% url 'logout' %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-danger btn-sm">Logout</button>
+            </form>
+            <a class="btn btn-outline-secondary btn-sm" href="/admin/">Admin</a>
+          {% else %}
+            <a class="btn btn-outline-primary btn-sm" href="{% url 'login' %}">Login</a>
+          {% endif %}
         </nav>
       </div>
     </header>

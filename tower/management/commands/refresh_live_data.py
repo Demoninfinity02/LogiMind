@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict
+from datetime import timedelta
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from tower.models import ExternalEvent, Location, Shipment, TrafficSnapshot, WeatherSnapshot
+from tower.models import ExternalEvent, Location, Shipment, ShipmentPriority, TrafficSnapshot, WeatherSnapshot
+from tower.services.llm import get_gemma_explanation_safe
 from tower.services.risk import compute_live_state
 from tower.services.traffic import get_or_simulate_traffic
 from tower.services.weather import get_or_fetch_weather
@@ -53,6 +55,7 @@ class Command(BaseCommand):
 
     def _refresh(self, *, force_weather: bool) -> None:
         now = timezone.now()
+        explanation_ttl_minutes = int(getattr(settings, "AI_EXPLANATION_TTL_MINUTES", 10))
         shipments = (
             Shipment.objects.select_related("origin", "destination")
             .order_by("created_at")[: settings.MAX_DASHBOARD_SHIPMENTS]
@@ -128,6 +131,35 @@ class Command(BaseCommand):
                 ):
                     s.recommendation = live.recommendation
                     changed_fields.append("recommendation")
+
+                needs_explanation = (
+                    live.risk_value > 0.5
+                    or s.priority in {ShipmentPriority.HIGH, ShipmentPriority.CRITICAL}
+                )
+                is_recent = bool(
+                    s.ai_explained_at
+                    and s.ai_explained_at >= now - timedelta(minutes=explanation_ttl_minutes)
+                )
+                if needs_explanation and (not s.ai_explanation or not is_recent):
+                    decision_text = (live.recommendation or "").strip()
+                    route_blocked = "blocked" in decision_text.lower()
+                    context = {
+                        "mode": s.mode,
+                        "risk": round(float(live.risk_value), 3),
+                        "delay_minutes": int(live.delay_minutes),
+                        "factors": {
+                            "weather": live.weather_label,
+                            "traffic": live.traffic_label,
+                            "disruptions": live.disruptions_summary,
+                        },
+                        "alternative": decision_text if decision_text else "No route switch suggested.",
+                        "constraint": f"Cost constraint: {s.get_cost_level_display()}",
+                        "final_decision": decision_text if decision_text else "Continue current mode and monitor.",
+                        "route_blocked": route_blocked,
+                    }
+                    s.ai_explanation = get_gemma_explanation_safe(context)
+                    s.ai_explained_at = now
+                    changed_fields.extend(["ai_explanation", "ai_explained_at"])
 
                 if changed_fields:
                     s.last_risk_recalc_at = now

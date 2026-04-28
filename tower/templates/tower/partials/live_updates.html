@@ -210,9 +210,23 @@
               </td>
               <td class="text-body-secondary small" style="min-width: 18rem;">
                 {% if row.live.recommendation %}
-                  {{ row.live.recommendation }}
+                  <div>{{ row.live.recommendation }}</div>
+                  <div class="mt-1">
+                    {% if row.shipment.ai_explanation %}
+                      <span class="text-body-secondary">AI:</span> {{ row.shipment.ai_explanation }}
+                    {% else %}
+                      <span class="text-body-secondary">Generating explanation…</span>
+                    {% endif %}
+                  </div>
                 {% else %}
-                  —
+                  <div>—</div>
+                  <div class="mt-1">
+                    {% if row.shipment.ai_explanation %}
+                      <span class="text-body-secondary">AI:</span> {{ row.shipment.ai_explanation }}
+                    {% else %}
+                      <span class="text-body-secondary">Generating explanation…</span>
+                    {% endif %}
+                  </div>
                 {% endif %}
               </td>
             </tr>
