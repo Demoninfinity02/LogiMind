@@ -35,7 +35,7 @@ services:
       - key: GEMINI_MODEL
         value: "models/gemma-3-27b-it"
       - key: GEMINI_TIMEOUT_SECONDS
-        value: "15"
+        value: "60"
 
 databases:
   - name: control-tower-db
