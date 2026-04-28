@@ -20,6 +20,17 @@ elif _allowed_hosts:
 else:
     ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 
+render_hostname = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
+if render_hostname and render_hostname not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(render_hostname)
+
+_csrf_trusted = os.environ.get("CSRF_TRUSTED_ORIGINS", "")
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_trusted.split(",") if o.strip()]
+if render_hostname:
+    render_origin = f"https://{render_hostname}"
+    if render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(render_origin)
+
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -67,6 +78,7 @@ DATABASES = {
     "default": dj_database_url.config(
         default=f"sqlite:///{(BASE_DIR / 'db.sqlite3')}",
         conn_max_age=int(os.environ.get("DB_CONN_MAX_AGE", "600")),
+        ssl_require=os.environ.get("DB_SSL_REQUIRE", "0" if DEBUG else "1") == "1",
     )
 }
 
@@ -90,6 +102,15 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login/"
+
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "1") == "1"
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 
 # Live update settings (keep simple, poll-based)

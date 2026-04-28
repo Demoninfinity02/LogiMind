@@ -13,7 +13,7 @@
     <header class="border-bottom bg-body">
       <div class="container py-3 d-flex align-items-center justify-content-between gap-3">
         <a class="text-decoration-none" href="/">
-          <span class="fw-semibold">Control Tower</span>
+          <span class="fw-semibold">LogiMind</span>
         </a>
         <nav class="d-flex align-items-center gap-2">
           {% if request.user.is_authenticated %}
@@ -25,6 +25,7 @@
             <a class="btn btn-outline-secondary btn-sm" href="/admin/">Admin</a>
           {% else %}
             <a class="btn btn-outline-primary btn-sm" href="{% url 'login' %}">Login</a>
+            <a class="btn btn-primary btn-sm" href="{% url 'signup' %}">Sign up</a>
           {% endif %}
         </nav>
       </div>

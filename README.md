@@ -1,4 +1,4 @@
-# Predictive Logistics Control Tower (Near Real-Time)
+# Predictive Logistics LogiMind (Near Real-Time)
 
 This is a lightweight Django demo that *feels* real-time using polling (no websockets).
 
@@ -27,6 +27,10 @@ cp .env.example .env
 ```
 
 `manage.py` automatically loads `.env` for local runs.
+
+Additional env templates:
+- `.env` -> local editable keys file (already gitignored)
+- `.env.render` -> copy values into Render environment variable panel
 
 3) Initialize DB + seed demo data:
 
@@ -59,6 +63,11 @@ Open: http://127.0.0.1:8000/
 
 ## Render deployment notes
 
-- Set `DEBUG=0`, `SECRET_KEY`, and attach a Postgres database (Render provides `DATABASE_URL`).
-- Start command: `gunicorn control_tower.wsgi:application`
-- Add a Render Cron Job (every few minutes): `python manage.py refresh_live_data --once`
+- This repo now includes `render.yaml` with:
+  - a Django web service,
+  - a Postgres database,
+  - and a cron service that runs `refresh_live_data --once` every 5 minutes.
+- Deploy on Render by creating a **Blueprint** from this repository.
+- Keep `DEBUG=0` in Render, and use a real `SECRET_KEY` (auto-generated in `render.yaml`).
+- `RENDER_EXTERNAL_HOSTNAME` is automatically supported in `ALLOWED_HOSTS` and CSRF trusted origins.
+- Database uses `DATABASE_URL` (Postgres) and enables SSL in production by default.

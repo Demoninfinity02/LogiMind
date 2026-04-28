@@ -1,16 +1,123 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import timedelta
 
 from django.conf import settings
+from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
-from .forms import ShipmentForm
-from .models import ExternalEvent, Location, Shipment, TrafficSnapshot, UserRole, WeatherSnapshot, user_company, user_role
+from .forms import ShipmentForm, SignUpForm
+from .models import (
+    Company,
+    CostLevel,
+    ExternalEvent,
+    Location,
+    Mode,
+    RiskLevel,
+    Shipment,
+    ShipmentPriority,
+    ShipmentStatus,
+    TrafficSnapshot,
+    UserRole,
+    WeatherSnapshot,
+    ensure_user_profile,
+    user_company,
+    user_role,
+)
 from .services.risk import compute_live_state
+
+
+def signup(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
+    form = SignUpForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = form.save()
+        login(request, user)
+        return redirect("dashboard")
+    return render(request, "registration/signup.html", {"form": form})
+
+
+def _ensure_demo_shipments_for_demon(user) -> None:
+    if not user.is_authenticated or user.username != "demon":
+        return
+
+    company, _ = Company.objects.get_or_create(name="Demon Logistics")
+    profile = ensure_user_profile(user)
+    changed = []
+    if profile.company_id != company.id:
+        profile.company = company
+        changed.append("company")
+    if profile.role != UserRole.EMPLOYEE:
+        profile.role = UserRole.EMPLOYEE
+        changed.append("role")
+    if changed:
+        profile.save(update_fields=changed)
+
+    now = timezone.now()
+    locations = [
+        ("Singapore", "SG", 1.3521, 103.8198),
+        ("Rotterdam", "NL", 51.9244, 4.4777),
+        ("Los Angeles", "US", 34.0522, -118.2437),
+        ("Mumbai", "IN", 19.0760, 72.8777),
+        ("Dubai", "AE", 25.2048, 55.2708),
+    ]
+    location_objs = {}
+    for name, cc, lat, lon in locations:
+        loc, _ = Location.objects.get_or_create(
+            name=name,
+            defaults={"country_code": cc, "latitude": lat, "longitude": lon},
+        )
+        location_objs[name] = loc
+
+    baseline = [
+        ("SH0001", "Mumbai", "Singapore", Mode.SEA, 48, ShipmentPriority.MEDIUM),
+        ("SH0002", "Dubai", "Rotterdam", Mode.SEA, 72, ShipmentPriority.LOW),
+        ("SH0003", "Los Angeles", "Dubai", Mode.AIR, 18, ShipmentPriority.LOW),
+        ("SH0004", "Singapore", "Los Angeles", Mode.SEA, 96, ShipmentPriority.LOW),
+        ("SH0005", "Rotterdam", "Mumbai", Mode.ROAD, 60, ShipmentPriority.LOW),
+        ("SH0006", "Dubai", "Mumbai", Mode.ROAD, 12, ShipmentPriority.MEDIUM),
+    ]
+    for ref, origin_name, destination_name, mode, hours, priority in baseline:
+        base_eta = now + timedelta(hours=hours)
+        cost_level = {
+            Mode.SEA: CostLevel.LOW,
+            Mode.ROAD: CostLevel.MEDIUM,
+            Mode.AIR: CostLevel.HIGH,
+        }.get(mode, CostLevel.MEDIUM)
+        shipment, created = Shipment.objects.get_or_create(
+            reference=ref,
+            defaults={
+                "origin": location_objs[origin_name],
+                "destination": location_objs[destination_name],
+                "created_by": user,
+                "company": company,
+                "mode": mode,
+                "priority": priority,
+                "status": ShipmentStatus.IN_TRANSIT,
+                "base_eta": base_eta,
+                "base_transit_hours": float(hours),
+                "cost_level": cost_level,
+                "budget_usd": 5000 if mode != Mode.AIR else 12000,
+                "expected_profit_usd": 3500 if mode != Mode.AIR else 9000,
+                "eta": base_eta,
+                "delay_minutes": 0,
+                "risk_level": RiskLevel.LOW,
+                "risk_score": 0,
+                "risk_value": 0.0,
+                "recommendation": "",
+            },
+        )
+        if not created:
+            shipment.created_by = user
+            shipment.company = company
+            shipment.priority = priority
+            shipment.save(update_fields=["created_by", "company", "priority", "updated_at"])
 
 
 def _shipments_for_user(request):
@@ -26,6 +133,7 @@ def _shipments_for_user(request):
 
 @login_required
 def dashboard(request):
+    _ensure_demo_shipments_for_demon(request.user)
     return render(
         request,
         "tower/dashboard.html",
@@ -56,6 +164,7 @@ def create_shipment(request):
 
 @login_required
 def live_updates(request):
+    _ensure_demo_shipments_for_demon(request.user)
     now = timezone.now()
     poll_seconds = settings.LIVE_UPDATES_POLL_SECONDS
 

@@ -221,11 +221,28 @@ class UserProfile(models.Model):
         return f"{self.user} ({self.get_role_display()})"
 
 
+def _enforce_demo_profile_defaults(user, profile: UserProfile) -> UserProfile:
+    if getattr(user, "username", "") != "demon":
+        return profile
+    company, _ = Company.objects.get_or_create(name="Demon Logistics")
+    changed_fields = []
+    if profile.role != UserRole.EMPLOYEE:
+        profile.role = UserRole.EMPLOYEE
+        changed_fields.append("role")
+    if profile.company_id != company.id:
+        profile.company = company
+        changed_fields.append("company")
+    if changed_fields:
+        profile.save(update_fields=changed_fields)
+    return profile
+
+
 def ensure_user_profile(user):
     profile = getattr(user, "profile", None)
     if profile:
-        return profile
-    return UserProfile.objects.create(user=user)
+        return _enforce_demo_profile_defaults(user, profile)
+    profile = UserProfile.objects.create(user=user)
+    return _enforce_demo_profile_defaults(user, profile)
 
 
 def user_role(user) -> str:
