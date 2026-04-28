@@ -159,6 +159,17 @@ def create_shipment(request):
             shipment.eta = shipment.base_eta
             shipment.delay_minutes = 0
             shipment.save()
+            return redirect("dashboard")
+        # Form invalid — re-render dashboard with validation errors visible.
+        _ensure_demo_shipments_for_demon(request.user)
+        return render(
+            request,
+            "tower/dashboard.html",
+            {
+                "poll_seconds": settings.LIVE_UPDATES_POLL_SECONDS,
+                "shipment_form": form,
+            },
+        )
     return redirect("dashboard")
 
 

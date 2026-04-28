@@ -39,3 +39,21 @@ class ShipmentForm(forms.ModelForm):
             "budget_usd",
             "expected_profit_usd",
         ]
+        widgets = {
+            "base_eta": forms.DateTimeInput(
+                attrs={"type": "datetime-local"},
+                format="%Y-%m-%dT%H:%M",
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs["class"] = "form-control form-control-sm"
+        # Accept the HTML5 datetime-local format
+        self.fields["base_eta"].input_formats = [
+            "%Y-%m-%dT%H:%M",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%d %H:%M",
+        ]

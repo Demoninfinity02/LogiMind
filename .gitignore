@@ -1,6 +1,56 @@
-.env
-.venv/
-db.sqlite3
-__pycache__/
+# Django/Python
 *.py[cod]
+*$py.class
+__pycache__/
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# Database
+db.sqlite3
+db.sqlite3-journal
+
+# Static files
 staticfiles/
+assets/
+media/
+
+# Environments and OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.spyderproject
+.spyproject
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# Testing / Profiling
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+*.prof
+
+# Caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/

@@ -133,7 +133,7 @@ class Command(BaseCommand):
                     changed_fields.append("recommendation")
 
                 needs_explanation = (
-                    live.risk_value > 0.5
+                    live.risk_value > 0.4
                     or s.priority in {ShipmentPriority.HIGH, ShipmentPriority.CRITICAL}
                 )
                 is_recent = bool(
@@ -146,16 +146,15 @@ class Command(BaseCommand):
                     context = {
                         "mode": s.mode,
                         "risk": round(float(live.risk_value), 3),
-                        "delay_minutes": int(live.delay_minutes),
-                        "factors": {
+                        "delay_hours": round(live.delay_minutes / 60.0, 2),
+                        "top_factors": {
                             "weather": live.weather_label,
                             "traffic": live.traffic_label,
                             "disruptions": live.disruptions_summary,
                         },
-                        "alternative": decision_text if decision_text else "No route switch suggested.",
+                        "alternative_mode": decision_text if decision_text else "None",
                         "constraint": f"Cost constraint: {s.get_cost_level_display()}",
                         "final_decision": decision_text if decision_text else "Continue current mode and monitor.",
-                        "route_blocked": route_blocked,
                     }
                     s.ai_explanation = get_gemma_explanation_safe(context)
                     s.ai_explained_at = now

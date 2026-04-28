@@ -211,19 +211,18 @@
               <td class="text-body-secondary small" style="min-width: 18rem;">
                 {% if row.live.recommendation %}
                   <div>{{ row.live.recommendation }}</div>
-                  <div class="mt-1">
-                    
-                  </div>
                 {% else %}
                   <div>—</div>
-                  <div class="mt-1">
-                    {% if row.shipment.ai_explanation %}
-                      <span class="text-body-secondary">AI:</span> {{ row.shipment.ai_explanation }}
-                    {% else %}
-                      <span class="text-body-secondary">Generating explanation…</span>
-                    {% endif %}
-                  </div>
                 {% endif %}
+                <div class="mt-1">
+                  {% if row.shipment.ai_explanation %}
+                    <span class="text-body-secondary">AI:</span> {{ row.shipment.ai_explanation }}
+                  {% elif row.live.risk_value > 0.4 or row.shipment.priority == 'high' or row.shipment.priority == 'critical' %}
+                    <span class="text-body-secondary">Generating explanation…</span>
+                  {% else %}
+                    <span class="text-body-secondary">No AI explanation needed (low risk).</span>
+                  {% endif %}
+                </div>
               </td>
             </tr>
           {% endfor %}

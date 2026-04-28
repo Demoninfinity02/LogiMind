@@ -3,7 +3,7 @@ services:
     name: control-tower-web
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    buildCommand: ./build.sh
     startCommand: gunicorn control_tower.wsgi:application --workers ${WEB_CONCURRENCY:-2} --threads ${GUNICORN_THREADS:-4} --timeout 120
     envVars:
       - key: PYTHON_VERSION
@@ -28,12 +28,20 @@ services:
         value: "180"
       - key: AI_EXPLANATION_TTL_MINUTES
         value: "10"
+      - key: OPENWEATHER_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: "models/gemma-3-27b-it"
+      - key: GEMINI_TIMEOUT_SECONDS
+        value: "15"
 
   - type: cron
     name: control-tower-refresh
     runtime: python
     schedule: "*/5 * * * *"
-    buildCommand: pip install -r requirements.txt
+    buildCommand: ./build.sh
     startCommand: python manage.py refresh_live_data --once
     envVars:
       - key: DEBUG
@@ -52,6 +60,14 @@ services:
         value: "180"
       - key: AI_EXPLANATION_TTL_MINUTES
         value: "10"
+      - key: OPENWEATHER_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: "models/gemma-3-27b-it"
+      - key: GEMINI_TIMEOUT_SECONDS
+        value: "15"
 
 databases:
   - name: control-tower-db
