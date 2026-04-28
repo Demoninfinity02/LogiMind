@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Control Tower{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
+    <div>
+      <h1 class="h3 mb-1">Predictive Logistics Control Tower</h1>
+      <div class="text-body-secondary">Near real-time updates via JS polling (every {{ poll_seconds }}s).</div>
+    </div>
+  </div>
+
+  <section class="card mb-3">
+    <div class="card-header">Create shipment</div>
+    <div class="card-body">
+      <form method="post" action="{% url 'create_shipment' %}" class="row g-2">
+        {% csrf_token %}
+        {% for field in shipment_form %}
+          <div class="col-md-4">
+            <label class="form-label small mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+              <div class="text-danger small">{{ field.errors|join:", " }}</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary btn-sm">Create shipment</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <div id="live-updates" data-poll-seconds="{{ poll_seconds }}">
+    <div class="card">
+      <div class="card-body text-body-secondary">Loading live updates…</div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var container = document.getElementById('live-updates');
+      if (!container) return;
+
+      var pollSeconds = Number(container.dataset.pollSeconds || '5');
+      if (!Number.isFinite(pollSeconds) || pollSeconds < 1) pollSeconds = 5;
+
+      function setLastUpdatedRelative() {
+        var el = document.getElementById('last-updated');
+        if (!el) return;
+        var ts = el.dataset.updatedAt;
+        if (!ts) return;
+        var seconds = Math.max(0, Math.floor((Date.now() - Date.parse(ts)) / 1000));
+        el.textContent = seconds + 's ago';
+      }
+
+      // Keep the “X seconds ago” indicator ticking between polls.
+      setLastUpdatedRelative();
+      if (!window.__ct_lastUpdatedTimer) {
+        window.__ct_lastUpdatedTimer = setInterval(setLastUpdatedRelative, 1000);
+      }
+
+      var inflight = false;
+      async function refresh() {
+        if (inflight) return;
+        inflight = true;
+        try {
+          var url = "{% url 'live_updates' %}" + '?_ts=' + Date.now();
+          var resp = await fetch(url, {
+            headers: { 'X-Requested-With': 'fetch' },
+            cache: 'no-store'
+          });
+          if (!resp.ok) throw new Error('live-updates status ' + resp.status);
+          var html = await resp.text();
+          container.innerHTML = html;
+          setLastUpdatedRelative();
+        } catch (e) {
+          // Keep it simple: leave previous content on screen.
+          console.warn('Live updates failed', e);
+        } finally {
+          inflight = false;
+        }
+      }
+
+      refresh();
+      setInterval(refresh, pollSeconds * 1000);
+    })();
+  </script>
+{% endblock %}

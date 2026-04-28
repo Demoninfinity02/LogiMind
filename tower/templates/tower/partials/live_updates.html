@@ -1,0 +1,225 @@
+<div>
+  <div class="card mb-3">
+    <div class="card-body d-flex flex-wrap align-items-center justify-content-between gap-3">
+      <div>
+        <div class="fw-semibold">Last updated</div>
+        <div class="text-body-secondary">
+          <span id="last-updated" data-updated-at="{{ now|date:'c' }}">0s ago</span>
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <span class="badge text-bg-secondary">Role: {{ current_role|title }}</span>
+        <span class="badge text-bg-secondary">Shipments: {{ shipment_rows|length }}</span>
+        <span class="badge text-bg-secondary">Disruptions: {{ active_events|length }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-3">
+    <div class="col-lg-4">
+      <section class="card h-100">
+        <div class="card-header">Live weather</div>
+        <div class="list-group list-group-flush">
+          {% for card in location_cards %}
+            <div class="list-group-item d-flex align-items-center justify-content-between gap-3">
+              <div class="min-w-0">
+                <div class="fw-semibold text-truncate">{{ card.location.name }}</div>
+                <div class="text-body-secondary small">
+                  {% if card.weather %}
+                    {% if card.weather.temperature_c is not None %}{{ card.weather.temperature_c|floatformat:0 }}°C · {% endif %}
+                    {{ card.weather.get_condition_display }}
+                  {% else %}
+                    Unknown
+                  {% endif %}
+                </div>
+              </div>
+              <div>
+                {% if card.weather %}
+                  {% if card.weather.risk_level == 'high' %}
+                    <span class="badge text-bg-danger">High</span>
+                  {% elif card.weather.risk_level == 'medium' %}
+                    <span class="badge text-bg-warning">Medium</span>
+                  {% else %}
+                    <span class="badge text-bg-success">Low</span>
+                  {% endif %}
+                {% else %}
+                  <span class="badge text-bg-secondary">Unknown</span>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+
+    <div class="col-lg-4">
+      <section class="card h-100">
+        <div class="card-header">Live traffic</div>
+        <div class="list-group list-group-flush">
+          {% for card in location_cards %}
+            <div class="list-group-item d-flex align-items-center justify-content-between gap-3">
+              <div class="min-w-0">
+                <div class="fw-semibold text-truncate">{{ card.location.name }}</div>
+                <div class="text-body-secondary small">
+                  {% if card.traffic %}
+                    {{ card.traffic.get_congestion_display }} · score {{ card.traffic.score|floatformat:1 }}
+                  {% else %}
+                    Unknown
+                  {% endif %}
+                </div>
+              </div>
+              <div>
+                {% if card.traffic %}
+                  {% if card.traffic.congestion == 'high' %}
+                    <span class="badge text-bg-danger">High</span>
+                  {% elif card.traffic.congestion == 'medium' %}
+                    <span class="badge text-bg-warning">Medium</span>
+                  {% else %}
+                    <span class="badge text-bg-success">Low</span>
+                  {% endif %}
+                {% else %}
+                  <span class="badge text-bg-secondary">Unknown</span>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+
+    <div class="col-lg-4">
+      <section class="card h-100">
+        <div class="card-header d-flex align-items-center justify-content-between gap-2">
+          <span>Active disruptions</span>
+          {% if active_events %}
+            <span class="badge text-bg-secondary">{{ active_events|length }}</span>
+          {% endif %}
+        </div>
+        <div class="card-body">
+          {% if active_events %}
+            <div class="list-group">
+              {% for e in active_events %}
+                <div class="list-group-item">
+                  <div class="d-flex align-items-start justify-content-between gap-3">
+                    <div class="min-w-0">
+                      <div class="fw-semibold text-truncate">{{ e.get_event_type_display }} — {{ e.location.name }}</div>
+                      <div class="text-body-secondary small">
+                        Severity: {{ e.get_severity_display }}
+                        {% if e.description %}· {{ e.description }}{% endif %}
+                      </div>
+                    </div>
+                    <div>
+                      {% if e.severity == 'high' %}
+                        <span class="badge text-bg-danger">High</span>
+                      {% elif e.severity == 'medium' %}
+                        <span class="badge text-bg-warning">Medium</span>
+                      {% else %}
+                        <span class="badge text-bg-success">Low</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-body-secondary mb-0">No active disruptions.</p>
+          {% endif %}
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <section class="card">
+    <div class="card-header">
+      <div class="fw-semibold">Shipments</div>
+      <div class="small text-body-secondary">
+        Decision scoring: Score = ExpectedTime(h) + 10·Risk + 0.5·Cost(k$) + 25·OverBudget(k$) + 25·Unprofitable(k$) - PriorityWeight
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Reference</th>
+            <th>Route</th>
+            <th>Mode</th>
+            <th>Priority</th>
+            <th>Signals</th>
+            <th>Status</th>
+            <th>Risk</th>
+            <th>Impact</th>
+            <th>Decision</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in shipment_rows %}
+            <tr>
+              <td class="fw-semibold">{{ row.shipment.reference }}</td>
+              <td>
+                <div class="text-truncate" style="max-width: 20rem;">{{ row.shipment.origin.name }} → {{ row.shipment.destination.name }}</div>
+              </td>
+              <td>{{ row.shipment.get_mode_display }}</td>
+              <td>
+                {% if row.shipment.priority == 'critical' %}
+                  <span class="badge text-bg-danger">{{ row.shipment.get_priority_display }}</span>
+                {% elif row.shipment.priority == 'high' %}
+                  <span class="badge text-bg-warning">{{ row.shipment.get_priority_display }}</span>
+                {% elif row.shipment.priority == 'medium' %}
+                  <span class="badge text-bg-info">{{ row.shipment.get_priority_display }}</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">{{ row.shipment.get_priority_display }}</span>
+                {% endif %}
+              </td>
+              <td class="small">
+                <div class="text-body-secondary">Why: {{ row.live.status_reason }}</div>
+                <div class="text-body-secondary">Weather: {{ row.live.weather_label }} · Traffic: {{ row.live.traffic_label }} · Disruptions: {{ row.live.disruptions_summary }}</div>
+                {% if row.live.delay_reason %}
+                  <div class="text-body-secondary">Delay reason: {{ row.live.delay_reason }}</div>
+                {% endif %}
+                <div class="text-body-secondary">
+                  Base: {{ row.shipment.base_transit_hours|floatformat:0 }}h · Cost constraint: {{ row.shipment.get_cost_level_display }}
+                  · Budget: ${{ row.shipment.budget_usd }} · Profit: ${{ row.shipment.expected_profit_usd }}
+                </div>
+              </td>
+              <td>
+                {% if row.live.status == 'delayed' %}
+                  <span class="badge text-bg-warning">{{ row.live.status_label }}</span>
+                {% elif row.live.status == 'delivered' %}
+                  <span class="badge text-bg-success">{{ row.live.status_label }}</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">{{ row.live.status_label }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.live.risk_level == 'high' %}
+                  <span class="badge text-bg-danger">{{ row.live.risk_label }}</span>
+                {% elif row.live.risk_level == 'medium' %}
+                  <span class="badge text-bg-warning">{{ row.live.risk_label }}</span>
+                {% else %}
+                  <span class="badge text-bg-success">{{ row.live.risk_label }}</span>
+                {% endif %}
+                <div class="text-body-secondary small">risk={{ row.live.risk_value|floatformat:2 }} ({{ row.live.risk_score }}%)</div>
+              </td>
+              <td class="small">
+                <div>{{ row.live.eta|date:"Y-m-d H:i" }}</div>
+                {% if row.live.delay_minutes > 0 %}
+                  <div class="text-body-secondary">Delay: +{{ row.live.delay_minutes }}m</div>
+                {% else %}
+                  <div class="text-body-secondary">Delay: +0m</div>
+                {% endif %}
+              </td>
+              <td class="text-body-secondary small" style="min-width: 18rem;">
+                {% if row.live.recommendation %}
+                  {{ row.live.recommendation }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
