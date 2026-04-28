@@ -71,8 +71,9 @@ def get_gemma_explanation_safe(context: dict) -> str:
         return get_gemini_explanation(context)
     except Exception as exc:
         logger.warning("Gemini explanation failed: %s", exc)
+        import traceback
+        traceback.print_exc()
         return FALLBACK_EXPLANATION
-
 
 # Keep the old name as an alias so existing callers don't break.
 get_gemma_explanation = get_gemini_explanation
