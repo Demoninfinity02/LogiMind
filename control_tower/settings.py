@@ -77,7 +77,7 @@ WSGI_APPLICATION = "control_tower.wsgi.application"
 DATABASES = {
     "default": dj_database_url.config(
         default=f"sqlite:///{(BASE_DIR / 'db.sqlite3')}",
-        conn_max_age=int(os.environ.get("DB_CONN_MAX_AGE", "600")),
+        conn_max_age=int(os.environ.get("DB_CONN_MAX_AGE") or "600"),
         ssl_require=os.environ.get("DB_SSL_REQUIRE", "0" if DEBUG else "1") == "1",
     )
 }
@@ -108,25 +108,25 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "1") == "1"
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS") or "31536000")
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
 
 # Live update settings (keep simple, poll-based)
-LIVE_UPDATES_POLL_SECONDS = int(os.environ.get("LIVE_UPDATES_POLL_SECONDS", "5"))
-MAX_DASHBOARD_SHIPMENTS = int(os.environ.get("MAX_DASHBOARD_SHIPMENTS", "10"))
+LIVE_UPDATES_POLL_SECONDS = int(os.environ.get("LIVE_UPDATES_POLL_SECONDS") or "5")
+MAX_DASHBOARD_SHIPMENTS = int(os.environ.get("MAX_DASHBOARD_SHIPMENTS") or "10")
 
 
 # Weather integration
 OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY", "")
-WEATHER_CACHE_TTL_SECONDS = int(os.environ.get("WEATHER_CACHE_TTL_SECONDS", "300"))
+WEATHER_CACHE_TTL_SECONDS = int(os.environ.get("WEATHER_CACHE_TTL_SECONDS") or "300")
 
 # Traffic simulation cache
-TRAFFIC_CACHE_TTL_SECONDS = int(os.environ.get("TRAFFIC_CACHE_TTL_SECONDS", "180"))
+TRAFFIC_CACHE_TTL_SECONDS = int(os.environ.get("TRAFFIC_CACHE_TTL_SECONDS") or "180")
 
 # Google Gemini API explanation settings
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemma3")
-GEMINI_TIMEOUT_SECONDS = int(os.environ.get("GEMINI_TIMEOUT_SECONDS", "15"))
-AI_EXPLANATION_TTL_MINUTES = int(os.environ.get("AI_EXPLANATION_TTL_MINUTES", "10"))
+GEMINI_TIMEOUT_SECONDS = int(os.environ.get("GEMINI_TIMEOUT_SECONDS") or "15")
+AI_EXPLANATION_TTL_MINUTES = int(os.environ.get("AI_EXPLANATION_TTL_MINUTES") or "10")
