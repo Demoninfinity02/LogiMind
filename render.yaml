@@ -37,38 +37,6 @@ services:
       - key: GEMINI_TIMEOUT_SECONDS
         value: "15"
 
-  - type: cron
-    name: control-tower-refresh
-    runtime: python
-    schedule: "*/5 * * * *"
-    buildCommand: ./build.sh
-    startCommand: python manage.py refresh_live_data --once
-    envVars:
-      - key: DEBUG
-        value: "0"
-      - key: SECRET_KEY
-        sync: false
-      - key: DATABASE_URL
-        fromDatabase:
-          name: control-tower-db
-          property: connectionString
-      - key: MAX_DASHBOARD_SHIPMENTS
-        value: "25"
-      - key: WEATHER_CACHE_TTL_SECONDS
-        value: "300"
-      - key: TRAFFIC_CACHE_TTL_SECONDS
-        value: "180"
-      - key: AI_EXPLANATION_TTL_MINUTES
-        value: "10"
-      - key: OPENWEATHER_API_KEY
-        sync: false
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: GEMINI_MODEL
-        value: "models/gemma-3-27b-it"
-      - key: GEMINI_TIMEOUT_SECONDS
-        value: "15"
-
 databases:
   - name: control-tower-db
     plan: free
