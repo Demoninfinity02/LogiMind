@@ -212,11 +212,7 @@
                 {% if row.live.recommendation %}
                   <div>{{ row.live.recommendation }}</div>
                   <div class="mt-1">
-                    {% if row.shipment.ai_explanation %}
-                      <span class="text-body-secondary">AI:</span> {{ row.shipment.ai_explanation }}
-                    {% else %}
-                      <span class="text-body-secondary">Generating explanation…</span>
-                    {% endif %}
+                    
                   </div>
                 {% else %}
                   <div>—</div>
